@@ -82,8 +82,8 @@ bool example1()
 
     SuperBlock txBuffer[256];
     ProtectedBlock txRecovery[256];
-    unsigned char *dataBlocks[256];
-    unsigned char *fecBlocks[256];
+    unsigned char *txDataBlocks[256];
+    unsigned char *txFecBlocks[256];
     int frameCount = 0;
     const int OriginalCount = 128;
     const int RecoveryCount = 32;
@@ -100,12 +100,12 @@ bool example1()
         if (i < OriginalCount)
         {
             txBuffer[i].protectedBlock.samples[0].i = i; // marker
-            dataBlocks[i] = (unsigned char *) &txBuffer[i].protectedBlock;
+            txDataBlocks[i] = (unsigned char *) &txBuffer[i].protectedBlock;
         }
         else
         {
             memset((void *) &txBuffer[i].protectedBlock, 0, sizeof(SuperBlock));
-            fecBlocks[i - OriginalCount] = (unsigned char *) &txRecovery[i - OriginalCount];
+            txFecBlocks[i - OriginalCount] = (unsigned char *) &txRecovery[i - OriginalCount];
         }
     }
 
@@ -116,15 +116,122 @@ bool example1()
     long long ts = getUSecs();
 
     FEClib::fec_encode(BlockBytes,
-            dataBlocks,
+            txDataBlocks,
             OriginalCount,
-            fecBlocks,
+            txFecBlocks,
             RecoveryCount);
 
     long long usecs = getUSecs() - ts;
 
     std::cerr << "Encoded in " << usecs << " microseconds" << std::endl;
 
+    // insert recovery data in sent data
+
+    for (int ir = 0; ir < RecoveryCount; ir++)
+    {
+        txBuffer[OriginalCount+ir].protectedBlock = txRecovery[ir];
+    }
+
+    SuperBlock* rxBuffer = new SuperBlock[256]; // received blocks
+    int nbRxBlocks = 0;
+
+    for (int i = 0; i < OriginalCount + RecoveryCount; i++)
+    {
+        if (i % 6 != 4)
+        {
+            rxBuffer[nbRxBlocks] = txBuffer[i];
+            nbRxBlocks++;
+        }
+    }
+
+    // simulate reception
+
+    ProtectedBlock  blockZero;
+    Sample *samplesBuffer = new Sample[samplesPerBlock * OriginalCount];
+    ProtectedBlock* rxData = (ProtectedBlock *) samplesBuffer;
+    ProtectedBlock rxRecovery[256];
+    unsigned char *rxDataBlocks[256];
+    unsigned char *rxFecBlocks[256];
+    unsigned int rxFecIndices[256];
+    int rxDataIndices[256];
+    unsigned int erasedIndices[256];
+    int nbRxDataBlocks = 0;
+    int nbRxFecBlocks = 0;
+    int nbBlocks = 0;
+
+    memset(rxDataIndices, 0, sizeof(int) * 256);
+
+    for (int i = 0; i < nbRxBlocks; i++)
+    {
+        if (nbBlocks < OriginalCount)
+        {
+            int blockIndex = rxBuffer[i].header.blockIndex;
+
+            if (blockIndex == 0) // special data
+            {
+                blockZero = rxBuffer[i].protectedBlock;
+                rxDataIndices[blockIndex] = 1;
+                nbRxDataBlocks++;
+            }
+            else if (blockIndex < OriginalCount) // data
+            {
+                rxData[blockIndex] = rxBuffer[i].protectedBlock;
+                rxDataIndices[blockIndex] = 1;
+                nbRxDataBlocks++;
+            }
+            else // FEC
+            {
+                rxRecovery[nbRxFecBlocks] = rxBuffer[i].protectedBlock;
+                rxFecBlocks[nbRxFecBlocks] = (unsigned char *) &rxRecovery[nbRxFecBlocks];
+                rxFecIndices[nbRxFecBlocks] = blockIndex - OriginalCount;
+                nbRxFecBlocks++;
+            }
+        }
+
+        nbBlocks++;
+    }
+
+    int nbErasedBlocks = 0;
+
+    for (int i = 0; i < OriginalCount; i++)
+    {
+        if (rxDataIndices[i] == 0)
+        {
+            erasedIndices[nbErasedBlocks] = i;
+            nbErasedBlocks++;
+        }
+
+        rxDataBlocks[i] = (unsigned char *) &rxData[i];
+    }
+
+    if ((nbRxDataBlocks < OriginalCount) && (nbRxDataBlocks + nbRxFecBlocks >= OriginalCount)) // decoding necessary and feasible
+    {
+        ts = getUSecs();
+
+        FEClib::fec_decode(BlockBytes,
+                rxDataBlocks,
+                OriginalCount,
+                rxFecBlocks,
+                rxFecIndices,
+                erasedIndices,
+                nbRxFecBlocks);
+
+        usecs = getUSecs() - ts;
+        std::cerr << "Decoded in " << usecs << " microseconds" << std::endl;
+    }
+
+    std::cerr << "final" << std::endl;
+
+    std::cerr << "zero:"
+        << (unsigned int) blockZero.samples[0].i << std::endl;
+
+    for (int i = 1; i < OriginalCount; i++)
+    {
+        std::cerr << i << ":"
+                << (unsigned int) rxData[i].samples[0].i << std::endl;
+    }
+
+    delete[] samplesBuffer;
     return true;
 }
 

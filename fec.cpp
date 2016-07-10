@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
 
 #include <assert.h>
 #include "fec.h"
@@ -851,6 +852,7 @@ static inline void reduce(int blockSize, unsigned char **data_blocks,
         }
     }
 
+    //std::cerr << "reduce: " << nr_fec_blocks << " : " << erasedIdx << std::endl;
     assert(nr_fec_blocks == erasedIdx);
 }
 
@@ -912,16 +914,16 @@ static inline void resolve(int blockSize, unsigned char **data_blocks,
     if (r)
     {
         int col;
-        fprintf(stderr, "Pivot not found\n");
-        fprintf(stderr, "Rows: ");
+        std::cerr << "Pivot not found" << std::endl;
+        std::cerr << "Rows:";
         for (row = 0; row < nr_fec_blocks; row++)
-            fprintf(stderr, "%d ", 128 + fec_block_nos[row]);
-        fprintf(stderr, "\n");
-        fprintf(stderr, "Columns: ");
+            std::cerr << " " << 128 + fec_block_nos[row];
+        std::cerr << std::endl;
+        std::cerr << "Columns:";
         for (col = 0; col < nr_fec_blocks; col++, ptr++)
-            fprintf(stderr, "%d ", erased_blocks[col]);
-        fprintf(stderr, "\n");
-        assert(0);
+            std::cerr << " " << erased_blocks[col];
+        std::cerr << std::endl;
+        assert(0); // abort
     }
 
     /* do the multiplication with the reduced code vector */
