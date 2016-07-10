@@ -9,7 +9,7 @@ This work is derived from the code in `fec.h` and `fec.c` in the [udp-senderx pr
 Prototype:
 
 <pre><code>
-void fec_encode(int blockSize,
+void FEClib::fec_encode(int blockSize,
         unsigned char **data_blocks,
         int nrDataBlocks,
         unsigned char **fec_blocks,
@@ -28,7 +28,7 @@ void fec_encode(int blockSize,
 Prototype:
 
 <pre><code>
-void fec_decode(int blockSize,
+void FEClib::fec_decode(int blockSize,
         unsigned char **data_blocks,
         int nr_data_blocks,
         unsigned char **fec_blocks,
