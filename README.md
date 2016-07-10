@@ -55,4 +55,14 @@ It simulates the sending of complex samples over UDP where data loss may occur. 
 
 Data loss is simulated by creating the received frame removing one block every 6 blocks at index 4 modulo 6 i.e blocks with indices 4, 10, 16, ... are removed thus 21 FEC blocks are necessary to reconstruct the frame.
 
-The first block (index 0) is considered special and in real life it could contain some frame related data. Thus it receives a special treatment and is not stored with the rest of data blocks. This shows it is not necessary that all data blocks need to be stored in the same structure of contiguous blocks.   
+The first block (index 0) is considered special and in real life it could contain some frame related data. Thus it receives a special treatment and is not stored with the rest of data blocks. This shows it is not necessary that all data blocks need to be stored in the same structure of contiguous blocks.
+
+<h2>Build</h2>
+
+This is a classical cmake project. Create a `build` directory at the root of the cloned repository and cd into it. To install it in a specific directory for example `/opt/install/feclib` type the following command:
+
+`cmake -Wno-dev -DCMAKE_INSTALL_PREFIX=/opt/install/feclib ..`
+
+To build a version with debugging symbols add `-DBUILD_TYPE=DEBUG` to the command line.
+
+Shared library `libfeclib.so` will be found in `/opt/install/feclib/lib` and the example `fectest` in `/opt/install/feclib/bin`
