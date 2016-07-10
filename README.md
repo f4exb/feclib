@@ -57,6 +57,43 @@ Data loss is simulated by creating the received frame removing one block every 6
 
 The first block (index 0) is considered special and in real life it could contain some frame related data. Thus it receives a special treatment and is not stored with the rest of data blocks. This shows it is not necessary that all data blocks need to be stored in the same structure of contiguous blocks.
 
+The real part of every first sample of a block is filled with the block number. When data is properly restored each block at index `i` will effectively have the value `i` at its first sample real part. This is what is showed in program output along with the encoding and decoding times in microseconds. Thus a normal output will look like:
+
+<pre><code>
+Initialize feclib...
+Fill original data...
+Generate recovery data...
+Encoded in 1797 microseconds
+Decoded in 1056 microseconds
+final
+zero:0
+1:1
+2:2
+3:3
+4:4
+5:5
+6:6
+7:7
+8:8
+9:9
+10:10
+11:11
+12:12
+...
+122:122
+123:123
+124:124 
+125:125
+126:126
+127:127
+example1 successful
+</code></pre>
+
+  - `zero:0` is the special block "zero"
+  - `4:4` is the first missing block at index 4 (0*6 + 4) and shows 4 as the value thus is correct
+  - `10:10` is the second missing block at index 10 (1*6 + 4)
+  - `124:124` is the last (21st) missing block at index 124 (20*6 + 4)
+
 <h2>Build</h2>
 
 This is a classical cmake project. Create a `build` directory at the root of the cloned repository and cd into it. To install it in a specific directory for example `/opt/install/feclib` type the following command:
