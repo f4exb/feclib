@@ -189,6 +189,11 @@ bool example1()
         }
 
         nbBlocks++;
+
+        if (nbBlocks == OriginalCount) // enough blocks received
+        {
+            break;
+        }
     }
 
     int nbErasedBlocks = 0;
